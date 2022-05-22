@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css"
+    rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="//cdn.datatables.net/1.12.0/css/jquery.dataTables.min.css">
+    <!-- <link rel="stylesheet" href="{{base_path()}}/./src/styles/bootstrap.min.css"> -->
+    <title>{% block title %} {% endblock %}</title>
+</head>
+<body>
+    <div class="container-fluid mt-5">
+
+        {% block body %} {% endblock %}
+
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.5/dist/umd/popper.min.js"
+    integrity="sha384-Xe+8cL9oJa6tN/veChSP7q+mnSPaj5Bcu9mPX5F5xIGE0DVittaqT5lorf0EI7Vk" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.min.js"
+    integrity="sha384-kjU+l4N0Yf4ZOJErLsIcvOU2qSb74wXpOhqTvwVx3OElZRweTnQ6d31fXEoRD1Jy" crossorigin="anonymous"></script>
+    <script
+      src="https://code.jquery.com/jquery-2.2.4.min.js"
+      integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+      crossorigin="anonymous"></script>
+
+    <script src="//cdn.datatables.net/1.12.0/js/jquery.dataTables.min.js"></script>
+
+    <script type="text/javascript">
+
+    $(document).ready( function () {
+        $('#table-users').DataTable();
+    } );
+      let url = window.location.href;
+      // console.log(url);
+      function getDptos(){
+        $.get(`${url}/../api/usuarios/dptos`, (data)=>{
+          let options = `<option value="">Seleccionar...</option>`;
+          for (var i in data) {
+            // console.log(data[i]);
+            $.each(data[i], (pos, val)=>{
+              options +=`
+              <option value="${val.Id}">${val.Departamento}</option>
+              `;
+            });
+          }
+          $("#departamento").html(options);
+        }, 'json');
+      }
+
+      function buscarCiudades(el){
+        let dpto = el.value;
+        // console.log(dpto);
+        $.ajax({
+          type:"POST",
+          url:`${url}/../api/usuarios/ciudades`,
+          dataType:'json',
+          data:{dpto},
+          success:function(data){
+            // console.log(data);
+            let optionsciu = `<option value="">Seleccionar...</option>`;
+            $.each(data, (pos, val)=>{
+              optionsciu +=`
+              <option value="${val.id}">${val.ciudad}</option>
+              `;
+            });
+            $("#ciudad").html(optionsciu);
+          }
+        })
+      }
+
+      // function getUsers(){
+      //   // console.log('data');
+      //   $.get(`${url}/../api/usuarios`, (data)=>{
+      //
+      //     var json = JSON.parse(JSON.stringify(data));
+      //
+      //     if (json["filas"] === 0) {
+      //       console.log('No hay registros');
+      //     }else{
+      //
+      //       let template;
+      //       $.each(data, (pos, val)=>{
+      //         template +=`
+      //         <tr>
+      //         <td>${val.idregistro}</td>
+      //         <td>${val.nombre}</td>
+      //         <td>${val.email}</td>
+      //         <td>${val.ciudad}</td>
+      //         <td>${val.departamento}</td>
+      //         <td>${val.asunto}</td>
+      //         <td>${val.mensaje}</td>
+      //         </tr>
+      //         `;
+      //       });
+      //
+      //       $("#tbody-usuarios").html(template);
+      //
+      //     }
+      //
+      //     // console.log(data);
+      //   }, 'json');
+      // }
+
+      $(()=>{
+        $("#frm-guardar-usuario").on('submit',(e)=>{
+          e.preventDefault();
+          $.ajax({
+            type:"POST",
+            url:`${url}/../api/usuarios/nuevo`,
+            data:$("#frm-guardar-usuario").serialize(),
+            success:function(data){
+              // console.log(data);
+              document.getElementById('frm-guardar-usuario').reset();
+              getUsers();
+            }
+          })
+
+        });
+      });
+
+      function getCiudad(idciudad,Idregistro){
+        var ciud='';
+        $.ajax({
+          type:"POST",
+          url:`${url}/../api/usuarios/nomciudad`,
+          dataType:'json',
+          data:{idciudad},
+          success:function(data){
+            var json = JSON.parse(JSON.stringify(data));
+            ciud = data.Ciudad;
+            console.log(ciud);
+            document.getElementById('ciudad'+Idregistro).innerHTML=ciud;
+
+          }
+
+
+        });
+
+      }
+
+      function getUsers(){
+        $.get(`${url}/../api/usuarios/usuarios`, (data)=>{
+
+          var json = JSON.parse(JSON.stringify(data));
+          // console.log(data);
+          let template;
+          for (var i in data) {
+            // console.log(data[i]);
+            $.each(data[i], (pos, val)=>{
+              var ciu = getCiudad(val.Ciudad,val.Idregistro);
+              template +=`
+              <tr>
+              <td>${val.Idregistro}</td>
+              <td>${val.Nombre}</td>
+              <td>${val.ISBN}</td>
+              <td id='ciudad${val.Idregistro}'></td>
+              <td>${val.Departamento}</td>
+              <td>${val.Asunto}</td>
+              <td>${val.Mensaje}</td>
+              </tr>
+              `;
+            });
+
+          }
+
+
+
+          $("#tbody-usuarios").html(template);
+
+        },'json');
+      }
+
+      getUsers();
+      getDptos();
+
+    </script>
+</body>
+</html>
